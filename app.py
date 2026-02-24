@@ -65,7 +65,7 @@ except Exception as e:
     st.error(f"Error al cargar el modelo: {e}")
 
 # 4. ENCABEZADO
-st.markdown('<h1 class="main-title">🚗 AI Vehicle Classifier</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-title">🚗 Sistema de Clasificación de Imagenes de Vehiculos con AI</h1>', unsafe_allow_html=True)
 st.write("---")
 
 # 5. CARGA DE ARCHIVO
