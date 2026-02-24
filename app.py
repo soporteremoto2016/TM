@@ -2,104 +2,104 @@ import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
 from keras.models import load_model
+import platform
 
-# 1. CONFIGURACIÓN DE PÁGINA (Debe ser lo primero)
+# 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
     page_title="AI Vehicle Classifier",
     page_icon="🚗",
     layout="centered"
 )
 
-# 2. CSS PERSONALIZADO PARA DISEÑO ELEGANTE (Fondo Azul y Estilo)
+# 2. CSS PERSONALIZADO (Corregido)
 st.markdown("""
     <style>
-    /* Fondo principal en degradado azul */
+    /* Fondo principal en azul */
     .stApp {
-        background: linear-gradient(to bottom, #001f3f, #0074D9);
-        color: white;
+        background-color: #001f3f;
+        background-image: linear-gradient(180deg, #001f3f 0%, #0074D9 100%);
     }
     
-    /* Estilo para el título */
+    /* Color de texto general */
+    .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span {
+        color: white !important;
+    }
+
+    /* Título elegante */
     .main-title {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        color: #FFFFFF;
         text-align: center;
-        font-weight: bold;
-        padding: 20px;
-        text-shadow: 2px 2px 4px #000000;
+        font-size: 3rem;
+        font-weight: 800;
+        padding: 1rem;
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
     }
-    
-    /* Contenedor de resultados */
-    .result-card {
+
+    /* Estilo para el cargador de archivos */
+    .stFileUploader {
         background-color: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 15px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        margin-top: 20px;
+        border-radius: 10px;
+        padding: 10px;
     }
     </style>
-    """, unsafe_allow_stdio=True, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# 3. CARGA DE MODELO
-@st.cache_resource # Esto evita que el modelo se recargue cada vez que mueves algo
+# 3. CARGA DE MODELO (Con cache para evitar lentitud)
+@st.cache_resource
 def load_my_model():
     return load_model('keras_model.h5')
 
-model = load_my_model()
+try:
+    model = load_my_model()
+except Exception as e:
+    st.error(f"Error al cargar el modelo: {e}")
 
-# 4. ENCABEZADO ORGANIZADO
-st.markdown('<h1 class="main-title">🚀 Reconocimiento Inteligente de Vehículos</h1>', unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>Sube una imagen y nuestra IA identificará si es un <b>Auto, Moto o Bicicleta</b></p>", unsafe_allow_html=True)
+# 4. ENCABEZADO
+st.markdown('<h1 class="main-title">🚗 AI Vehicle Classifier</h1>', unsafe_allow_html=True)
+st.write("---")
 
-# 5. BARRA LATERAL (SIDEBAR)
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2345/2345454.png", width=100) # Icono decorativo
-    st.title("Panel de Control")
-    st.info("Este modelo utiliza una red neuronal convolucional entrenada en Teachable Machine.")
-    st.divider()
-    st.write("💻 **Versión:** 2.0 (Diseño Elegante)")
-
-# 6. CARGA DE ARCHIVO
-st.divider()
-img_file_buffer = st.file_uploader("", type=['jpg', 'jpeg', 'png'])
+# 5. CARGA DE ARCHIVO
+img_file_buffer = st.file_uploader("Sube una imagen (Auto, Moto o Bicicleta)", type=['jpg', 'jpeg', 'png'])
 
 if img_file_buffer is not None:
-    # Columnas para organizar imagen vs resultados
-    col_img, col_res = st.columns([1, 1])
+    # Columnas para organizar imagen y resultado
+    col1, col2 = st.columns([1, 1], gap="large")
 
-    with col_img:
-        img = Image.open(img_file_buffer).convert("RGB")
+    with col1:
+        # Procesamiento de imagen
+        image = Image.open(img_file_buffer).convert("RGB")
         size = (224, 224)
-        img_display = ImageOps.fit(img, size, Image.Resampling.LANCZOS)
-        st.image(img_display, caption="Imagen Detectada", use_container_width=True)
+        image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
+        st.image(image, caption="Imagen cargada", use_container_width=True)
 
-    # PROCESAMIENTO
-    data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
-    img_array = np.array(img_display)
-    normalized_image_array = (img_array.astype(np.float32) / 127.5) - 1
-    data[0] = normalized_image_array
-    
-    prediction = model.predict(data)
+    with col2:
+        # Preparación para el modelo
+        img_array = np.asarray(image)
+        normalized_image_array = (img_array.astype(np.float32) / 127.5) - 1
+        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+        data[0] = normalized_image_array
 
-    with col_res:
-        st.markdown('<div class="result-card">', unsafe_allow_html=True)
-        st.subheader("Análisis de la IA")
+        # Inferencia
+        with st.spinner('Analizando imagen...'):
+            prediction = model.predict(data)
         
-        # Lógica de las tres condiciones
+        st.subheader("Resultados del Análisis")
+        
+        # Lógica de detección (Asegúrate que el orden [0,1,2] coincida con tu modelo)
         if prediction[0][0] > 0.5:
-            st.success(f"🚗 **AUTO**\n\nConfianza: {prediction[0][0]:.2%}")
+            st.success(f"### Es un AUTO 🚗")
+            st.write(f"Confianza: **{prediction[0][0]:.2%}**")
         elif prediction[0][1] > 0.5:
-            st.success(f"🏍️ **MOTO**\n\nConfianza: {prediction[0][1]:.2%}")
+            st.success(f"### Es una MOTO 🏍️")
+            st.write(f"Confianza: **{prediction[0][1]:.2%}**")
         elif prediction[0][2] > 0.5:
-            st.success(f"🚲 **BICICLETA**\n\nConfianza: {prediction[0][2]:.2%}")
+            st.success(f"### Es una BICICLETA 🚲")
+            st.write(f"Confianza: **{prediction[0][2]:.2%}**")
         else:
-            st.warning("⚠️ No se pudo determinar con precisión.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.warning("No estoy seguro. La confianza es muy baja.")
 
-    # 7. MÉTRICAS DETALLADAS (Abajo)
-    st.divider()
+    # Métricas adicionales al final
+    st.write("---")
     m1, m2, m3 = st.columns(3)
-    m1.metric("Prob. Auto", f"{prediction[0][0]:.1%}")
-    m2.metric("Prob. Moto", f"{prediction[0][1]:.1%}")
-    m3.metric("Prob. Bici", f"{prediction[0][2]:.1%}")
+    m1.metric("Auto", f"{prediction[0][0]:.1%}")
+    m2.metric("Moto", f"{prediction[0][1]:.1%}")
+    m3.metric("Bici", f"{prediction[0][2]:.1%}")
