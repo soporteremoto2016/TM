@@ -6,7 +6,7 @@ import platform
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="AI Vehicle Classifier",
+    page_title="Sistema de Clasificación de Imagenes",
     page_icon="🚗",
     layout="centered"
 )
